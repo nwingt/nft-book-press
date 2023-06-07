@@ -2,7 +2,7 @@
   <div>
     <header>
       <div style="display: flex; flex-wrap:wrap; background-color:#28646e; color: white; padding: 20px;">
-        <NuxtLink :to="{ name: 'index' }">
+        <NuxtLink :to="{ name: 'index' }" style="color: white; text-decoration: none;">
           <h1>LikeCoin NFT Book Press</h1>
         </NuxtLink>
         <div style="flex: 1" />
