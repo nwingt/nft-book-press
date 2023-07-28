@@ -13,22 +13,23 @@
       <input v-model="classIdInput" placeholder="likenft....">
       <p>Total number of NFT for sale: {{ totalStock }}</p>
       <hr>
-      <div v-for="p, index in prices" :key="index">
-        <p><label>Price(USD) per NFT Book (Minimal ${{ MINIMAL_PRICE }})</label></p>
-        <input :value="p.price" type="number" step="0.01" :min="MINIMAL_PRICE" @input="e => updatePrice(e, 'price', index)">
-        <p><label>Total number of NFT for sale at this price</label></p>
-        <input :value="p.stock" type="number" @input="e => updatePrice(e, 'stock', index)">
-        <p><label>Product name of this price</label></p>
-        <input placeholder="Product name in English" :value="p.nameEn" @input="e => updatePrice(e, 'nameEn', index)"><br>
-        <input placeholder="產品中文名字" :value="p.nameZh" @input="e => updatePrice(e, 'nameZh', index)">
-        <p><label>Product description of this price</label></p>
-        <textarea placeholder="Product description in English" :value="p.descriptionEn" @input="e => updatePrice(e, 'descriptionEn', index)" /><br>
-        <textarea placeholder="產品中文描述" :value="p.descriptionZh" @input="e => updatePrice(e, 'descriptionZh', index)" />
-        <hr>
-      </div>
-      <button @click="addMorePrice">
-        Add more prices
-      </button>
+
+      <h3>Pricing and Availability <button @click="addMorePrice">Add Edition</button></h3>
+      <component :is="hasMultiplePrices ? 'ul' : 'div'">
+        <component :is="hasMultiplePrices ? 'li' : 'div'" v-for="p, index in prices" :key="index">
+          <hr v-if="index > 0">
+          <p><label>Price(USD) of this {{ priceItemLabel }} (Minimal ${{ MINIMAL_PRICE }})</label></p>
+          <input :value="p.price" type="number" step="0.01" :min="MINIMAL_PRICE" @input="e => updatePrice(e, 'price', index)">
+          <p><label>Total number of NFT for sale of this {{ priceItemLabel }}</label></p>
+          <input :value="p.stock" type="number" @input="e => updatePrice(e, 'stock', index)">
+          <p><label>Product name of this {{ priceItemLabel }}</label></p>
+          <input placeholder="Product name in English" :value="p.nameEn" @input="e => updatePrice(e, 'nameEn', index)"><br>
+          <input placeholder="產品中文名字" :value="p.nameZh" @input="e => updatePrice(e, 'nameZh', index)">
+          <p><label>Product description of this {{ priceItemLabel }}</label></p>
+          <textarea placeholder="Product description in English" :value="p.descriptionEn" @input="e => updatePrice(e, 'descriptionEn', index)" /><br>
+          <textarea placeholder="產品中文描述" :value="p.descriptionZh" @input="e => updatePrice(e, 'descriptionZh', index)" />
+        </component>
+      </component>
 
       <hr>
       <div>
@@ -108,13 +109,15 @@ const connectStatus = ref<any>({})
 
 const classIdInput = ref(route.query.class_id as string || '')
 const prices = ref<any[]>([{
-  price: 0,
-  stock: Number(route.query.count as string || 0),
+  price: MINIMAL_PRICE,
+  stock: Number(route.query.count as string || 1),
   nameEn: 'Standard Edition',
   nameZh: '標準版',
   descriptionEn: 'Content of standard edition',
   descriptionZh: '標準版內容'
 }])
+const hasMultiplePrices = computed(() => prices.value.length > 1)
+const priceItemLabel = computed(() => hasMultiplePrices.value ? 'edition' : 'book')
 const moderatorWallets = ref<string[]>([])
 const notificationEmails = ref<string[]>([])
 const moderatorWalletInput = ref('')
@@ -156,8 +159,8 @@ function updatePrice (e: InputEvent, key: string, index: number) {
 
 function addMorePrice () {
   prices.value.push({
-    price: 0,
-    stock: 0,
+    price: MINIMAL_PRICE,
+    stock: 1,
     nameEn: `Tier ${prices.value.length}`,
     nameZh: `級別 ${prices.value.length}`
   })
