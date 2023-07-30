@@ -16,7 +16,7 @@
 
       <h3>Pricing and Availability <button @click="addMorePrice">Add Edition</button></h3>
       <component :is="hasMultiplePrices ? 'ul' : 'div'">
-        <component :is="hasMultiplePrices ? 'li' : 'div'" v-for="p, index in prices" :key="index">
+        <component :is="hasMultiplePrices ? 'li' : 'div'" v-for="p, index in prices" :key="p.index">
           <hr v-if="index > 0">
           <p><label>Price(USD) of this {{ priceItemLabel }} (Minimal ${{ MINIMAL_PRICE }})</label></p>
           <input :value="p.price" type="number" step="0.01" :min="MINIMAL_PRICE" @input="e => updatePrice(e, 'price', index)">
@@ -90,6 +90,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import { v4 as uuidv4 } from 'uuid'
 import { LCD_URL, LIKE_CO_API } from '~/constant'
 import { useBookStoreApiStore } from '~/stores/book-store-api'
 import { useWalletStore } from '~/stores/wallet'
@@ -162,6 +163,7 @@ function updatePrice (e: InputEvent, key: string, index: number) {
 function addMorePrice () {
   nextPriceIndex.value += 1
   prices.value.push({
+    index: uuidv4(),
     price: MINIMAL_PRICE,
     stock: 1,
     nameEn: `Tier ${nextPriceIndex.value}`,
