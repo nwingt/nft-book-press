@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>New NFT Book Listing</h1>
+    <h1>{{ pageTitle }}</h1>
     <div v-if="error" style="color: red">
       {{ error }}
     </div>
@@ -10,12 +10,13 @@
     <hr>
     <section v-if="bookStoreApiStore.isAuthenticated">
       <p><label>NFT Class ID:</label></p>
-      <input v-model="classIdInput" class="classIdInput" placeholder="likenft....">
+      <input v-model="classIdInput" class="classIdInput" placeholder="likenft...." :disabled="isEditMode">
       <p>Total number of NFT for sale: {{ totalStock }}</p>
       <hr>
 
       <h3>
-        Pricing and Availability <button @click="addMorePrice">
+        Pricing and Availability
+        <button v-if="!isEditMode" @click="addMorePrice">
           Add Edition
         </button>
       </h3>
@@ -98,7 +99,7 @@
       </button>
       <hr>
       <button :disabled="isLoading" @click="onSubmit">
-        Submit
+        {{ submitButtonText }}
       </button>
     </section>
   </div>
@@ -119,9 +120,11 @@ const walletStore = useWalletStore()
 const bookStoreApiStore = useBookStoreApiStore()
 const { wallet } = storeToRefs(walletStore)
 const { token } = storeToRefs(bookStoreApiStore)
-const { newBookListing } = bookStoreApiStore
+const { newBookListing, updateEditionPrice } = bookStoreApiStore
 const router = useRouter()
 const route = useRoute()
+const classId = ref(route.query.class_id as string)
+const editionIndex = ref(route.query.edition_index as string)
 
 const MINIMAL_PRICE = 0.9
 
@@ -134,7 +137,7 @@ const mdEditorPlaceholder = ref({
   zh: '產品中文描述...'
 })
 
-const classIdInput = ref(route.query.class_id as string || '')
+const classIdInput = ref(classId || '')
 const nextPriceIndex = ref(1)
 const prices = ref<any[]>([{
   price: MINIMAL_PRICE,
@@ -170,6 +173,12 @@ const toolbarOptions = ref<string[]>([
   'preview'
 ])
 
+const isEditMode = computed(() => classId.value && editionIndex.value)
+const pageTitle = computed(() => isEditMode.value ? 'Edit Current Edition' : 'New NFT Book Listing')
+const submitButtonText = computed(() => isEditMode.value ? 'Save Changes' : 'Submit')
+const editionInfo = ref<any>({})
+const classOwnerWallet = ref<any>({})
+
 config({
   markdownItConfig (mdit: any) {
     mdit.options.html = false
@@ -179,6 +188,47 @@ config({
 onMounted(async () => {
   try {
     isLoading.value = true
+    if (isEditMode.value) {
+      const { data: classData, error: classFetchError } = await useFetch(`${LIKE_CO_API}/likernft/book/store/${classId.value}`,
+        {
+          headers: {
+            authorization: `Bearer ${token.value}`
+          }
+        })
+      if (classFetchError.value) {
+        throw classFetchError.value
+      }
+
+      classOwnerWallet.value = classData.value
+      if (classOwnerWallet?.value?.ownerWallet !== wallet.value) {
+        throw new Error('NOT_OWNER_OF_NFT_CLASS')
+      }
+
+      editionInfo.value = classData.value
+      const currentEdition = editionInfo.value.prices.filter(e => e.index.toString() === editionIndex.value)[0]
+      if (currentEdition) {
+        prices.value = [
+          {
+            price: currentEdition.price,
+            stock: currentEdition.stock,
+            nameEn: currentEdition.name.en,
+            nameZh: currentEdition.name.zh,
+            descriptionEn: currentEdition.description.en,
+            descriptionZh: currentEdition.description.zh
+          }
+        ]
+      }
+      const {
+        moderatorWallets: classModeratorWallets,
+        notificationEmails: classNotificationEmails,
+        connectedWallets: classConnectedWallets
+      } = classData.value as any
+      moderatorWallets.value = classModeratorWallets
+      notificationEmails.value = classNotificationEmails
+      isStripeConnectChecked.value = !!(classConnectedWallets && Object.keys(classConnectedWallets).length)
+      stripeConnectWallet.value = classConnectedWallets && Object.keys(classConnectedWallets)[0]
+    }
+
     const { data, error: fetchError } = await useFetch(`${LIKE_CO_API}/likernft/book/user/connect/status?wallet=${wallet.value}`,
       {
         headers: {
@@ -252,23 +302,25 @@ function sanitizeHtml (html: string) {
 
 async function onSubmit () {
   try {
-    if (!classIdInput.value) {
-      throw new Error('Please input NFT class ID')
-    }
-    if (moderatorWalletInput.value) {
-      throw new Error('Please press "Add" button to add moderator wallet')
-    }
-    if (notificationEmailInput.value) {
-      throw new Error('Please press "Add" button to add notification email')
-    }
+    if (!isEditMode.value) {
+      if (!classIdInput.value) {
+        throw new Error('Please input NFT class ID')
+      }
+      if (moderatorWalletInput.value) {
+        throw new Error('Please press "Add" button to add moderator wallet')
+      }
+      if (notificationEmailInput.value) {
+        throw new Error('Please press "Add" button to add notification email')
+      }
 
-    const { data, error: fetchError } = await useFetch(`${LCD_URL}/cosmos/nft/v1beta1/classes/${classIdInput.value}`)
-    if (fetchError.value && fetchError.value?.statusCode !== 404) {
-      throw new Error(fetchError.value.toString())
-    }
-    const collectionId = (data?.value as any)?.class?.data?.metadata?.nft_meta_collection_id || ''
-    if (!collectionId.includes('nft_book') && !collectionId.includes('book_nft')) {
-      throw new Error('NFT Class not in NFT BOOK meta collection')
+      const { data, error: fetchError } = await useFetch(`${LCD_URL}/cosmos/nft/v1beta1/classes/${classIdInput.value}`)
+      if (fetchError.value && fetchError.value?.statusCode !== 404) {
+        throw new Error(fetchError.value.toString())
+      }
+      const collectionId = (data?.value as any)?.class?.data?.metadata?.nft_meta_collection_id || ''
+      if (!collectionId.includes('nft_book') && !collectionId.includes('book_nft')) {
+        throw new Error('NFT Class not in NFT BOOK meta collection')
+      }
     }
 
     isLoading.value = true
@@ -300,12 +352,20 @@ async function onSubmit () {
           [stripeConnectWallet.value]: 100
         }
       : null
-    await newBookListing(classIdInput.value, {
-      connectedWallets,
-      moderatorWallets,
-      notificationEmails,
-      prices: p
-    })
+
+    if (isEditMode.value) {
+      await updateEditionPrice(classId.value as string, editionIndex.value, {
+        price: p[0]
+      })
+    } else {
+      await newBookListing(classIdInput.value, {
+        connectedWallets,
+        moderatorWallets,
+        notificationEmails,
+        prices: p
+      })
+    }
+
     router.push({ name: 'nft-book-store' })
   } catch (err) {
     const errorData = (err as any).data || err

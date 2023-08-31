@@ -16,7 +16,12 @@
             <th>Order</th>
             <th>Name</th>
             <th>Price (USD)</th>
-            <th v-if="userIsOwner">Sort</th>
+            <th v-if="userIsOwner">
+              Sort
+            </th>
+            <th v-if="userIsOwner">
+              Edit
+            </th>
           </tr>
         </thead>
         <Draggable
@@ -34,7 +39,14 @@
               <td style="text-align: right;">
                 {{ element.price }}
               </td>
-              <td v-if="userIsOwner" style="text-align: center;cursor: grab">::</td>
+              <td v-if="userIsOwner" style="text-align: center;cursor: grab">
+                ::
+              </td>
+              <td>
+                <NuxtLink :to="{ name: 'nft-book-store-new', query: { class_id: classId, edition_index: index } }">
+                  ✏️
+                </NuxtLink>
+              </td>
             </tr>
           </template>
         </Draggable>
