@@ -211,10 +211,10 @@ onMounted(async () => {
           {
             price: currentEdition.price,
             stock: currentEdition.stock,
-            nameEn: currentEdition.name.en,
-            nameZh: currentEdition.name.zh,
-            descriptionEn: currentEdition.description.en,
-            descriptionZh: currentEdition.description.zh
+            nameEn: currentEdition.name?.en || '',
+            nameZh: currentEdition.name?.zh || '',
+            descriptionEn: currentEdition.description?.en || '',
+            descriptionZh: currentEdition.description?.zh || ''
           }
         ]
       }
