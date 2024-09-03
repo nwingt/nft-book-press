@@ -204,7 +204,8 @@
           <template v-if="isAllowChangingNotificationEmailSettings" #footer>
             <UButton
               label="Update"
-              color="gray"
+              :disabled="bookUser?.isEnableNotificationEmails === isEnableNotificationEmails"
+              :loading="isUpdatingBookUserProfile"
               @click="updateUserProfile"
             />
           </template>
@@ -282,7 +283,8 @@ const collectionStore = useCollectionStore()
 const userStore = useUserStore()
 const { wallet } = storeToRefs(walletStore)
 const { token } = storeToRefs(bookStoreApiStore)
-const { bookUser } = storeToRefs(userStore)
+const { bookUser, isUpdatingBookUserProfile } = storeToRefs(userStore)
+const toast = useToast()
 
 const error = ref('')
 const isLoading = ref(false)
@@ -491,9 +493,26 @@ async function updateUserProfile () {
     return
   }
 
-  await userStore.updateBookUserProfile({
-    isEnableNotificationEmails: isEnableNotificationEmails.value
-  })
+  try {
+    await userStore.updateBookUserProfile({
+      isEnableNotificationEmails: isEnableNotificationEmails.value
+    })
+    toast.add({
+      icon: 'i-heroicons-check-circle',
+      title: 'User profile updated'
+    })
+  } catch (e) {
+    toast.add({
+      icon: 'i-heroicons-exclamation-circle',
+      title: 'Unable to update user profile',
+      description: (e as Error).toString(),
+      timeout: 0,
+      color: 'red',
+      ui: {
+        title: 'text-red-400 dark:text-red-400'
+      }
+    })
+  }
 }
 
 </script>
