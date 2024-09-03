@@ -48,10 +48,6 @@ export const useUserStore = defineStore('user', () => {
       }
       bookUser.value = { ...bookUser.value, ...payload }
       return bookUser.value
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error(error)
-      throw error
     } finally {
       isUpdatingBookUserProfile.value = false
     }

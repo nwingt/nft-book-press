@@ -502,6 +502,8 @@ async function updateUserProfile () {
       title: 'User profile updated'
     })
   } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error(e)
     toast.add({
       icon: 'i-heroicons-exclamation-circle',
       title: 'Unable to update user profile',
