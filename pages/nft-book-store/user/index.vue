@@ -187,7 +187,7 @@
                 icon="i-heroicons-exclamation-circle"
                 color="orange"
                 variant="subtle"
-                title="Email is not setup."
+                title="Email is not setup yet."
                 description="To enable email notifications, please setup your Liker ID email."
               />
               <UAlert
