@@ -115,7 +115,13 @@ export async function downloadQRCodes (
     })
 
     const { saveAs } = await import('file-saver')
-    const zipFileBlob = await zip.generateAsync({ type: 'blob' })
+    const zipFileBlob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: {
+        level: 9
+      }
+    })
     saveAs(zipFileBlob, zipFilename)
   } catch (error) {
     // eslint-disable-next-line no-console
