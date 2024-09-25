@@ -160,7 +160,10 @@ async function shortenURL ({ url, key }: { url: string, key: string }) {
     if (error.value) {
       throw error.value
     }
-    return data.value?.link
+    if (!data.value) {
+      throw new Error('No data returned from Bitly')
+    }
+    return data.value.link
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error(error)
