@@ -2,7 +2,8 @@ import {
   DrawType,
   DotType,
   CornerSquareType,
-  CornerDotType
+  CornerDotType,
+  FileExtension
 } from '@likecoin/qr-code-styling'
 
 import NFCIcon from '~/assets/images/nfc.png'
@@ -71,5 +72,63 @@ export function getQRCodeOptions ({
       type: 'dot' as CornerDotType
     },
     data
+  }
+}
+
+const QRCODE_DOWNLOADABLE_FILE_TYPES: {
+  value: FileExtension
+  label: string
+}[] = [
+  { value: 'svg', label: 'SVG' },
+  { value: 'png', label: 'PNG' }
+]
+
+export async function downloadQRCodes (
+  items: { filename: string, url: string }[],
+  options: { zipFilename?: string } = {}
+) {
+  const zipFilename = `${options.zipFilename || 'QR Codes'}-${new Date().getTime()}.zip`
+  try {
+    const { default: QRCodeStyling } = await import('@likecoin/qr-code-styling')
+    const qrCodeResults = await Promise.all(items.map(async (item) => {
+      const qrCode = new QRCodeStyling(getQRCodeOptions({ data: item.url }))
+      const dataResults = await Promise.all(QRCODE_DOWNLOADABLE_FILE_TYPES.map(type => qrCode.getRawData(type.value)))
+      return QRCODE_DOWNLOADABLE_FILE_TYPES.map(({ value: ext }, index) => {
+        const data = dataResults[index]
+        if (!data) {
+          throw new Error(`Failed to generate QR code for ${item.filename}.${ext}`)
+        }
+        return {
+          filename: `${item.filename}.${ext}`,
+          data
+        }
+      })
+    }))
+
+    const { default: JSZip } = await import('jszip')
+    const zip = new JSZip()
+    if (!zip) {
+      throw new Error('Failed to create zip file for QR codes')
+    }
+    qrCodeResults.flat().forEach((qrCode) => {
+      zip.file(qrCode.filename, qrCode.data)
+    })
+
+    const { saveAs } = await import('file-saver')
+    const zipFileBlob = await zip.generateAsync({ type: 'blob' })
+    saveAs(zipFileBlob, zipFilename)
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error(error)
+    const toast = useToast()
+    toast.add({
+      icon: 'i-heroicons-exclamation-circle',
+      title: `Failed to download QR codes file ${zipFilename}`,
+      timeout: 0,
+      color: 'red',
+      ui: {
+        title: 'text-red-400 dark:text-red-400'
+      }
+    })
   }
 }
