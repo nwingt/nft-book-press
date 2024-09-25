@@ -90,19 +90,19 @@ export async function downloadQRCodes (
   const zipFilename = `${options.zipFilename || 'QR Codes'}-${new Date().getTime()}.zip`
   try {
     const { default: QRCodeStyling } = await import('@likecoin/qr-code-styling')
-    const qrCodeResults = await Promise.all(items.map(async (item) => {
+    const qrCodeResults = await Promise.all(items.map((item) => {
       const qrCode = new QRCodeStyling(getQRCodeOptions({ data: item.url }))
-      const dataResults = await Promise.all(QRCODE_DOWNLOADABLE_FILE_TYPES.map(type => qrCode.getRawData(type.value)))
-      return QRCODE_DOWNLOADABLE_FILE_TYPES.map(({ value: ext }, index) => {
-        const data = dataResults[index]
+      return Promise.all(QRCODE_DOWNLOADABLE_FILE_TYPES.map(async (type) => {
+        const extension = type.value
+        const data = await qrCode.getRawData(extension)
         if (!data) {
-          throw new Error(`Failed to generate QR code for ${item.filename}.${ext}`)
+          throw new Error(`Failed to generate QR code for ${item.filename}.${extension}`)
         }
         return {
-          filename: `${item.filename}.${ext}`,
+          filename: `${item.filename}.${extension}`,
           data
         }
-      })
+      }))
     }))
 
     const { default: JSZip } = await import('jszip')
