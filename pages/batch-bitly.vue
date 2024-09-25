@@ -157,7 +157,7 @@ async function shortenURL ({ url, key }: { url: string, key: string }) {
         ]
       }
     })
-    if (error) {
+    if (error.value) {
       throw error.value
     }
     return data.value?.link
