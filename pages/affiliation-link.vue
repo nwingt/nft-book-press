@@ -130,85 +130,20 @@
         </template>
       </UCard>
 
-      <UCard
-        v-else
-        :ui="{
-          header: { base: 'flex justify-between items-center' },
-          body: { base: 'divide-y divide-gray-200 dark:divide-gray-800', padding: '' }
-        }"
-      >
-        <template #header>
-          <div class="flex items-center gap-4">
-            <UButton
-              icon="i-heroicons-arrow-uturn-left"
-              label="Back"
-              variant="soft"
-              @click="productData = undefined"
-            />
+      <template v-else>
+        <header>
+          <UButton
+            icon="i-heroicons-arrow-uturn-left"
+            label="Back to configuration"
+            variant="soft"
+            @click="productData = undefined"
+          />
+        </header>
 
-            <h2 class="font-bold">
-              {{ tableTitle }}
-            </h2>
-          </div>
+        <template v-if="commonQueryStringTableRows.length">
+          <h3 class="text-lg font-bold" v-text="'Common Query String'" />
 
-          <UDropdown
-            :items="[
-              [
-                {
-                  label: 'Print All QR Codes',
-                  icon: 'i-heroicons-qr-code',
-                  click: printAllQRCodes,
-                },
-                {
-                  label: 'Download QR Codes',
-                  icon: 'i-heroicons-arrow-down-on-square-stack',
-                  click: downloadAllQRCodes,
-                },
-                {
-                  label: 'Download All Links',
-                  icon: 'i-heroicons-arrow-down-on-square-stack',
-                  click: downloadAllPurchaseLinks,
-                },
-                {
-                  label: 'Shorten All Links',
-                  icon: 'i-heroicons-sparkles',
-                  click: shortenAllLinks,
-                },
-              ]
-            ]"
-            :popper="{ placement: 'top-end' }"
-          >
-            <UButton
-              icon="i-heroicons-ellipsis-horizontal-20-solid"
-              color="gray"
-              variant="soft"
-            />
-          </UDropdown>
-        </template>
-
-        <div v-if="priceIndexOptions.length" class="px-4 py-5 sm:p-6">
-          <UFormGroup label="Edition">
-            <USelect
-              v-model="priceIndex"
-              :options="priceIndexOptions"
-            />
-          </UFormGroup>
-        </div>
-
-        <div
-          v-if="commonQueryStringTableRows.length"
-          class="px-4 py-5 sm:p-6"
-        >
-          <UCard
-            :ui="{ body: { padding: '' } }"
-          >
-            <template #header>
-              <h3
-                class="text-sm font-bold"
-                v-text="'Common Link Query Parameters'"
-              />
-            </template>
-
+          <UCard :ui="{ body: { padding: '' } }">
             <UTable
               :columns="[
                 { key: 'key', label: 'Key' },
@@ -218,46 +153,108 @@
               :ui="{ td: { font: 'font-mono' } }"
             />
           </UCard>
-        </div>
+        </template>
 
-        <UTable :columns="linkTableColumns" :rows="linkTableRows">
-          <template #channelId-data="{ row }">
-            <div v-text="row.channelName" />
-            <div
-              class="text-gray-400 dark:text-gray-700 text-xs font-mono"
-              v-text="row.channelId"
-            />
-          </template>
-          <template #utmCampaign-data="{ row }">
-            <UKbd class="font-mono" :value="row.utmCampaign" />
-          </template>
-          <template #link-data="{ row }">
-            <div class="flex items-center gap-2">
-              <UButton
-                icon="i-heroicons-qr-code"
-                variant="outline"
-                size="xs"
-                @click="selectedPurchaseLink = row"
-              />
-              <UButton
-                icon="i-heroicons-document-duplicate"
-                variant="outline"
-                size="xs"
-                @click="copyLink(row.url || '')"
-              />
-              <UButton
-                class="font-mono break-all"
-                :label="row.url"
-                :to="row.url"
-                color="gray"
-                variant="outline"
-                size="xs"
-                target="_blank"
-              />
-            </div>
-          </template>
-        </UTable>
-      </UCard>
+        <h3 class="pt-4 text-lg font-bold" v-text="'Affiliation Links'" />
+
+        <ul>
+          <li>
+            <UCard
+              :ui="{
+                header: { base: 'flex justify-between items-center' },
+                body: { base: 'divide-y divide-gray-200 dark:divide-gray-800', padding: '' }
+              }"
+            >
+              <template #header>
+                <div class="flex items-center gap-4">
+                  <h2 class="font-bold" v-text="productName || ''" />
+                </div>
+
+                <UDropdown
+                  :items="[
+                    [
+                      {
+                        label: 'Print All QR Codes',
+                        icon: 'i-heroicons-qr-code',
+                        click: printAllQRCodes,
+                      },
+                      {
+                        label: 'Download QR Codes',
+                        icon: 'i-heroicons-arrow-down-on-square-stack',
+                        click: downloadAllQRCodes,
+                      },
+                      {
+                        label: 'Download All Links',
+                        icon: 'i-heroicons-arrow-down-on-square-stack',
+                        click: downloadAllPurchaseLinks,
+                      },
+                      {
+                        label: 'Shorten All Links',
+                        icon: 'i-heroicons-sparkles',
+                        click: shortenAllLinks,
+                      },
+                    ]
+                  ]"
+                  :popper="{ placement: 'top-end' }"
+                >
+                  <UButton
+                    icon="i-heroicons-ellipsis-horizontal-20-solid"
+                    color="gray"
+                    variant="soft"
+                  />
+                </UDropdown>
+              </template>
+
+              <div v-if="priceIndexOptions.length" class="px-4 py-5 sm:p-6">
+                <UFormGroup label="Edition">
+                  <USelect
+                    v-model="priceIndex"
+                    :options="priceIndexOptions"
+                  />
+                </UFormGroup>
+              </div>
+
+              <UTable :columns="linkTableColumns" :rows="linkTableRows">
+                <template #channelId-data="{ row }">
+                  <div v-text="row.channelName" />
+                  <div
+                    class="text-gray-400 dark:text-gray-700 text-xs font-mono"
+                    v-text="row.channelId"
+                  />
+                </template>
+                <template #utmCampaign-data="{ row }">
+                  <UKbd class="font-mono" :value="row.utmCampaign" />
+                </template>
+                <template #link-data="{ row }">
+                  <div class="flex items-center gap-2">
+                    <UButton
+                      icon="i-heroicons-qr-code"
+                      variant="outline"
+                      size="xs"
+                      @click="selectedPurchaseLink = row"
+                    />
+                    <UButton
+                      icon="i-heroicons-document-duplicate"
+                      variant="outline"
+                      size="xs"
+                      @click="copyLink(row.url || '')"
+                    />
+                    <UButton
+                      class="font-mono break-all"
+                      :label="row.url"
+                      :to="row.url"
+                      color="gray"
+                      variant="outline"
+                      size="xs"
+                      target="_blank"
+                    />
+                  </div>
+                </template>
+              </UTable>
+            </UCard>
+          </li>
+        </ul>
+      </template>
 
       <UModal v-model="isOpenQRCodeModal">
         <QRCodeGenerator
@@ -514,7 +511,6 @@ const priceIndexOptions = computed(() => {
   }))
 })
 
-const tableTitle = computed(() => `${productName.value ? `${productName.value} ` : ''}Affiliation Links`)
 const linkTableColumns = [
   {
     key: 'channelId',
