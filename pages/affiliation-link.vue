@@ -159,124 +159,19 @@
 
         <ul>
           <li>
-            <UCard
-              :ui="{
-                header: { base: 'flex justify-between items-center' },
-                body: { base: 'divide-y divide-gray-200 dark:divide-gray-800', padding: '' }
-              }"
-            >
-              <template #header>
-                <div class="flex items-center gap-4">
-                  <h2 class="font-bold" v-text="productName || ''" />
-                </div>
-
-                <UDropdown
-                  :items="[
-                    [
-                      {
-                        label: 'Print All QR Codes',
-                        icon: 'i-heroicons-qr-code',
-                        click: printAllQRCodes,
-                      },
-                      {
-                        label: 'Download QR Codes',
-                        icon: 'i-heroicons-arrow-down-on-square-stack',
-                        click: downloadAllQRCodes,
-                      },
-                      {
-                        label: 'Download All Links',
-                        icon: 'i-heroicons-arrow-down-on-square-stack',
-                        click: downloadAllPurchaseLinks,
-                      },
-                      {
-                        label: 'Shorten All Links',
-                        icon: 'i-heroicons-sparkles',
-                        click: shortenAllLinks,
-                      },
-                    ]
-                  ]"
-                  :popper="{ placement: 'top-end' }"
-                >
-                  <UButton
-                    icon="i-heroicons-ellipsis-horizontal-20-solid"
-                    color="gray"
-                    variant="soft"
-                  />
-                </UDropdown>
-              </template>
-
-              <div v-if="priceIndexOptions.length" class="px-4 py-5 sm:p-6">
-                <UFormGroup label="Edition">
-                  <USelect
-                    v-model="priceIndex"
-                    :options="priceIndexOptions"
-                  />
-                </UFormGroup>
-              </div>
-
-              <UTable :columns="linkTableColumns" :rows="linkTableRows">
-                <template #channelId-data="{ row }">
-                  <div v-text="row.channelName" />
-                  <div
-                    class="text-gray-400 dark:text-gray-700 text-xs font-mono"
-                    v-text="row.channelId"
-                  />
-                </template>
-                <template #utmCampaign-data="{ row }">
-                  <UKbd class="font-mono" :value="row.utmCampaign" />
-                </template>
-                <template #link-data="{ row }">
-                  <div class="flex items-center gap-2">
-                    <UButton
-                      icon="i-heroicons-qr-code"
-                      variant="outline"
-                      size="xs"
-                      @click="selectedPurchaseLink = row"
-                    />
-                    <UButton
-                      icon="i-heroicons-document-duplicate"
-                      variant="outline"
-                      size="xs"
-                      @click="copyLink(row.url || '')"
-                    />
-                    <UButton
-                      class="font-mono break-all"
-                      :label="row.url"
-                      :to="row.url"
-                      color="gray"
-                      variant="outline"
-                      size="xs"
-                      target="_blank"
-                    />
-                  </div>
-                </template>
-              </UTable>
-            </UCard>
+            <AffiliationLinkTable
+              :product-data="productData"
+              :product-id="productId"
+              :custom-channels="customChannels"
+              :is-using-custom-destination="isUsingCustomDestination"
+              :custom-destination-url="customDestinationURLInput"
+              :should-prefix-channel-id-for-utm-campaign="shouldPrefixChannelIdForUTMCampaign"
+              :merged-query-string-object="mergedQueryStringObject"
+              :destination-setting="destinationSetting"
+            />
           </li>
         </ul>
       </template>
-
-      <UModal v-model="isOpenQRCodeModal">
-        <QRCodeGenerator
-          v-if="selectedPurchaseLink"
-          :data="selectedPurchaseLink.qrCodeUrl"
-          :file-name="getQRCodeFilename(selectedPurchaseLink.channel)"
-          :width="500"
-          :height="500"
-        >
-          <template #header>
-            <h3 class="font-bold font-mono">
-              Download QR Code
-            </h3>
-            <UButton
-              icon="i-heroicons-x-mark"
-              color="gray"
-              variant="ghost"
-              @click="isOpenQRCodeModal = false"
-            />
-          </template>
-        </QRCodeGenerator>
-      </UModal>
     </PageBody>
   </PageContainer>
 </template>
@@ -284,14 +179,10 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 
-import { AFFILIATION_CHANNEL_DEFAULT, AFFILIATION_CHANNELS } from '~/constant'
-
 import { useCollectionStore } from '~/stores/collection'
 import { useLikerStore } from '~/stores/liker'
 import { useStripeStore } from '~/stores/stripe'
 import { useUserStore } from '~/stores/user'
-
-import { getPurchaseLink } from '~/utils'
 
 const { LIKE_CO_API } = useRuntimeConfig().public
 const collectionStore = useCollectionStore()
@@ -300,7 +191,6 @@ const stripeStore = useStripeStore()
 const userStore = useUserStore()
 const { userLikerInfo } = storeToRefs(userStore)
 const route = useRoute()
-const router = useRouter()
 const toast = useToast()
 
 const productIdInputModelValue = ref('')
@@ -437,8 +327,6 @@ const commonQueryStringTableRows = computed(() => {
     }))
 })
 
-const isCollection = computed(() => productId.value?.startsWith('col_'))
-
 const destinationSettings = ref([
   {
     name: 'Liker Land Product Page',
@@ -490,92 +378,10 @@ const canCreateAffiliationLink = computed(() => {
 })
 
 const productData = ref<any>(undefined)
-const productName = computed(() => {
-  if (!productData.value) {
-    return ''
-  }
-  const name = productData.value?.name
-  if (isCollection.value && name) {
-    return name.zh || name.en
-  }
-  return name
-})
-const priceIndex = ref(0)
-const priceIndexOptions = computed(() => {
-  if (!productData.value || isCollection.value) {
-    return []
-  }
-  return productData.value?.prices.map((price: any) => ({
-    label: price.name?.zh || price.name?.en || price.name,
-    value: price.index
-  }))
-})
-
-const linkTableColumns = [
-  {
-    key: 'channelId',
-    label: 'Channel',
-    sortable: true
-  },
-  {
-    key: 'utmCampaign',
-    label: 'UTM Campaign'
-  },
-  {
-    key: 'link',
-    label: 'Link',
-    sortable: false
-  }
-]
-const linkTableRows = computed(() => {
-  const channels = [...customChannels.value, ...AFFILIATION_CHANNELS]
-  return channels.map((channel) => {
-    const utmCampaignInput = mergedQueryStringObject.value.utm_campaign
-    let utmCampaign = utmCampaignInput || utmCampaignDefault
-    if (shouldPrefixChannelIdForUTMCampaign.value && channel.id !== AFFILIATION_CHANNEL_DEFAULT) {
-      utmCampaign = `${convertChannelIdToLikerId(channel.id)}_${utmCampaign}`
-    }
-    const urlConfig: any = {
-      [isCollection.value ? 'collectionId' : 'classId']: productId.value || '',
-      channel: channel.id,
-      priceIndex: priceIndex.value,
-      customLink: isUsingCustomDestination.value ? customDestinationURLInput.value : undefined,
-      isUseLikerLandLink: destinationSetting.value === 'liker_land',
-      query: {
-        utm_campaign: utmCampaign,
-        ...mergedQueryStringObject.value
-      }
-    }
-    return {
-      channelId: channel.id,
-      channelName: channel.name,
-      utmCampaign,
-      url: getPurchaseLink(urlConfig),
-      qrCodeUrl: getPurchaseLink({
-        ...urlConfig,
-        isForQRCode: mergedQueryStringObject.value.utm_source === linkQueryDefault.value.utm_source
-      })
-    }
-  })
-})
-
-const selectedPurchaseLink = ref<{
-  channel: string,
-  url: string,
-  qrCodeUrl: string
-} | undefined>(undefined)
-const isOpenQRCodeModal = computed({
-  get: () => !!selectedPurchaseLink.value,
-  set: (value) => {
-    if (!value) {
-      selectedPurchaseLink.value = undefined
-    }
-  }
-})
 
 async function fetchProductData () {
   try {
-    if (isCollection.value) {
+    if (productId.value?.startsWith('col_')) {
       return collectionStore.lazyFetchCollectionById(productId.value)
     } else {
       const { data: classData, error: classFetchError } = await useFetch(`${LIKE_CO_API}/likernft/book/store/${productId.value}`)
@@ -655,94 +461,6 @@ async function createAffiliationLink () {
   } finally {
     isCreatingAffiliationLinks.value = false
   }
-}
-
-function getQRCodeFilename (channel = '') {
-  const filenameParts: string[] = []
-  if (isUsingCustomDestination.value) {
-    const url = new URL(customDestinationURLInput.value)
-    filenameParts.push(url.hostname)
-  } else if (isCollection.value) {
-    filenameParts.push(`price_${priceIndex.value}`)
-  } else {
-    filenameParts.push(`${productName.value || productId.value}`)
-  }
-  if (channel) {
-    filenameParts.push(`channel_${channel}`)
-  }
-  return filenameParts.join('_')
-}
-
-async function copyLink (text = '') {
-  await navigator.clipboard.writeText(text)
-  toast.add({
-    icon: 'i-heroicons-check-circle',
-    title: 'Copied link to clipboard',
-    timeout: 2000,
-    color: 'green'
-  })
-}
-
-function downloadAllPurchaseLinks () {
-  downloadFile({
-    data: linkTableRows.value,
-    fileName: `${productName.value}_purchase_links.csv`,
-    fileType: 'csv'
-  })
-}
-
-function printAllQRCodes () {
-  try {
-    sessionStorage.setItem(
-      'nft_book_press_batch_qrcode',
-      convertArrayOfObjectsToCSV(linkTableRows.value.map(({ channelId, qrCodeUrl, ...link }) => ({ key: channelId, ...link, url: qrCodeUrl })))
-    )
-    window.open('/batch-qrcode?print=1', 'batch_qrcode', 'popup,menubar=no,location=no,status=no')
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error(error)
-    toast.add({
-      icon: 'i-heroicons-exclamation-circle',
-      title: 'Failed to print QR codes',
-      timeout: 0,
-      color: 'red',
-      ui: {
-        title: 'text-red-400 dark:text-red-400'
-      }
-    })
-  }
-}
-
-function shortenAllLinks () {
-  try {
-    sessionStorage.setItem(
-      'nft_book_press_batch_shorten_url',
-      convertArrayOfObjectsToCSV(linkTableRows.value.map(({ channelId, ...link }) => ({ key: channelId, ...link })))
-    )
-    router.push({ name: 'batch-short-links', query: { print: 1 } })
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error(error)
-    toast.add({
-      icon: 'i-heroicons-exclamation-circle',
-      title: 'Failed to shorten links',
-      timeout: 0,
-      color: 'red',
-      ui: {
-        title: 'text-red-400 dark:text-red-400'
-      }
-    })
-  }
-}
-
-async function downloadAllQRCodes () {
-  const items = linkTableRows.value.map(link => ({
-    url: link.qrCodeUrl,
-    filename: getQRCodeFilename(link.channelId)
-  }))
-  await downloadQRCodes(items, {
-    zipFilename: `${productName.value || productId.value}_QR Codes`
-  })
 }
 
 function prefillChannelIdIfPossible () {
