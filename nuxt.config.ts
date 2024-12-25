@@ -25,7 +25,8 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     'nuxt-gtag',
     'nuxt-security',
-    '@nuxt/scripts'
+    '@nuxt/scripts',
+    '@wagmi/vue/nuxt'
   ],
 
   scripts: {
@@ -69,7 +70,10 @@ export default defineNuxtConfig({
     removeLoggers: false
   },
 
-  plugins: ['~/plugins/buffer.ts'],
+  plugins: [
+    '~/plugins/buffer.ts',
+    '~/plugins/wagmi.ts'
+  ],
 
   alias: {
     // polyfill process
@@ -78,6 +82,9 @@ export default defineNuxtConfig({
   vite: {
     define: {
       global: 'globalThis'
+    },
+    optimizeDeps: {
+      include: ['eventemitter3']
     },
     plugins: [
       nodePolyfills({
