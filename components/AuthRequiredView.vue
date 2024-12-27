@@ -19,7 +19,7 @@
       :loading="isAuthenticating"
       :disabled="isRestoringSession"
       block
-      @click="onAuthenticate"
+      @click="onConnect"
     />
   </PageBody>
   <slot v-else />
@@ -27,11 +27,18 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import { optimismSepolia } from '@wagmi/vue/chains'
 import { useBookStoreApiStore } from '~/stores/book-store-api'
 import { useAuth } from '~/composables/useAuth'
 
 const bookStoreApiStore = useBookStoreApiStore()
 const { isRestoringSession } = storeToRefs(bookStoreApiStore)
-const { isAuthenticating, onAuthenticate } = useAuth()
+const { isAuthenticating } = useAuth()
+const { connectors, connect } = useConnect()
+
+async function onConnect () {
+  const connector = connectors[0]
+  await connect({ connector, chainId: optimismSepolia.id })
+}
 
 </script>

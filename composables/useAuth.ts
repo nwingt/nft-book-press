@@ -7,7 +7,7 @@ export function useAuth () {
   const bookStoreApiStore = useBookStoreApiStore()
   const store = useWalletStore()
   const { wallet, signer } = storeToRefs(store)
-  const { connect, disconnect, signMessageMemo } = store
+  const { connect, signMessageMemo } = store
   const { authenticate, clearSession } = bookStoreApiStore
   const toast = useToast()
 
@@ -36,6 +36,7 @@ export function useAuth () {
 
       await authenticate(wallet.value, signature)
     } catch (err) {
+      const { disconnect } = useDisconnect()
       disconnect()
       clearSession()
       // eslint-disable-next-line no-console

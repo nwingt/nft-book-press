@@ -16,7 +16,7 @@ const store = useWalletStore()
 const { handleConnectorRedirect } = store
 
 const { wallet, signer } = storeToRefs(store)
-const { signMessageMemo, disconnect } = store
+const { signMessageMemo } = store
 const bookStoreApiStore = useBookStoreApiStore()
 const { authenticate, clearSession } = bookStoreApiStore
 
@@ -50,6 +50,7 @@ onMounted(async () => {
 
       await authenticate(wallet.value, signature)
     } catch (error) {
+      const { disconnect } = useDisconnect()
       disconnect()
       clearSession()
       toast.add({
