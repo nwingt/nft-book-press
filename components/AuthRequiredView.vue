@@ -27,18 +27,16 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { optimismSepolia } from '@wagmi/vue/chains'
 import { useBookStoreApiStore } from '~/stores/book-store-api'
 import { useAuth } from '~/composables/useAuth'
 
 const bookStoreApiStore = useBookStoreApiStore()
 const { isRestoringSession } = storeToRefs(bookStoreApiStore)
 const { isAuthenticating } = useAuth()
-const { connectors, connect } = useConnect()
+const { connect } = useCustomConnect()
 
-async function onConnect () {
-  const connector = connectors[0]
-  await connect({ connector, chainId: optimismSepolia.id })
+function onConnect () {
+  connect()
 }
 
 </script>

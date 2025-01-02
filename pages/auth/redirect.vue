@@ -50,7 +50,7 @@ onMounted(async () => {
 
       await authenticate(wallet.value, signature)
     } catch (error) {
-      const { disconnect } = useDisconnect()
+      const { disconnect } = useCustomDisconnect()
       disconnect()
       clearSession()
       toast.add({

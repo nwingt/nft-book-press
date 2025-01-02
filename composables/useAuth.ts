@@ -36,7 +36,7 @@ export function useAuth () {
 
       await authenticate(wallet.value, signature)
     } catch (err) {
-      const { disconnect } = useDisconnect()
+      const { disconnect } = useCustomDisconnect()
       disconnect()
       clearSession()
       // eslint-disable-next-line no-console

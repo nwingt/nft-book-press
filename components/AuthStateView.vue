@@ -49,7 +49,6 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { optimismSepolia } from '@wagmi/vue/chains'
 import { useWalletStore } from '~/stores/wallet'
 import { getPortfolioURL, copyToClipboard } from '~/utils/index'
 import { shortenWalletAddress } from '~/utils/cosmos'
@@ -62,17 +61,16 @@ const bookStoreApiStore = useBookStoreApiStore()
 const { clearSession } = bookStoreApiStore
 const { isRestoringSession } = storeToRefs(bookStoreApiStore)
 const { isAuthenticating } = useAuth()
-const { connectors, connect } = useConnect()
+const { connect } = useCustomConnect()
 
 const portfolioURL = computed(() => getPortfolioURL(wallet.value))
 
 function onConnect () {
-  const connector = connectors[0]
-  connect({ connector, chainId: optimismSepolia.id })
+  connect()
 }
 
 function onClickDisconnect () {
-  const { disconnect } = useDisconnect()
+  const { disconnect } = useCustomDisconnect()
   disconnect()
   clearSession()
 }
